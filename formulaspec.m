@@ -42,6 +42,7 @@ const_to_s(implementation_defined(_), Str) :-
 :- type expression ---> 
      literal_num(float)
      ; var(string)
+     ; imaginary
      ; bin_operation(expression, operator, expression).
 
 
@@ -97,6 +98,9 @@ expr_to_string(literal_num(X), Str) :-
 
 expr_to_string(var(X), Str) :-
    Str = X.
+
+expr_to_string(imaginary, Str) :-
+   Str = "i".
 
 expr_to_string(bin_operation(E1, Op, E2), Str) :-
    op_to_string(Op,StrOp),
@@ -181,6 +185,57 @@ simplify(bin_operation(literal_num(0.0), plus, Op1),Op1).
 simplify(X,X).
 
 
+:- pred reduce_expression(expression::in,map(string,expression)::in, expression::out) is det.
+
+reduce_expression(var(VarName), Env, Result) :-
+   (if map.search(Env, VarName, LookupResult) then
+       reduce_expression(LookupResult, Env, Result)
+    else
+       Result = var("ERROR")).
+
+reduce_expression(literal_num(X), Env, literal_num(X)).
+
+reduce_expression(imaginary, _, imaginary).
+
+reduce_expression(bin_operation(Left, Operator, Right), Env, Result) :-
+   reduce_expression(Left, Env, LeftReduced),
+   reduce_expression(Right, Env, RightReduced),
+   NewBinaryOperation =  bin_operation(LeftReduced, Operator, RightReduced),
+   (   NewBinaryOperation = bin_operation(literal_num(X1), times, literal_num(X2)) ->
+              Result = literal_num(X1 * X2)
+      ;   NewBinaryOperation = bin_operation(literal_num(X1), plus, literal_num(X2)) ->
+              Result = literal_num(X1 + X2)
+      ;   NewBinaryOperation = bin_operation(literal_num(X1), division, literal_num(X2)) ->
+              Result = literal_num(X1 / X2)
+      ;   NewBinaryOperation = bin_operation(literal_num(X1), minus, literal_num(X2)) ->
+              Result = literal_num(X1 - X2)
+      ;   NewBinaryOperation = bin_operation(imaginary, times, imaginary) ->
+              Result = literal_num(-1.0)
+      ;   NewBinaryOperation = bin_operation(imaginary, Op, literal_num(X)) ->
+              Result = bin_operation(literal_num(X),Op,imaginary)
+      ;  NewBinaryOperation = bin_operation( bin_operation(X2, plus, X3),times,X1) ->
+              Op1 = bin_operation(X1, times, X2),
+              Op2 = bin_operation(X1, times, X3),
+              reduce_expression(bin_operation(Op1, plus, Op2), Env, Result)
+      ;  NewBinaryOperation = bin_operation(X1, times, bin_operation(X2, plus, X3)) ->
+              Op1 = bin_operation(X1, times, X2),
+              Op2 = bin_operation(X1, times, X3),
+              reduce_expression(bin_operation(Op1, plus, Op2), Env, Result)
+      ;  NewBinaryOperation = bin_operation(literal_num(X1), plus, bin_operation(X2, plus, literal_num(X3))) ->
+              reduce_expression(bin_operation(X2, plus, literal_num(X1+X3)),Env,Result)
+      ;  NewBinaryOperation = bin_operation(literal_num(X1), plus, bin_operation(literal_num(X2), plus, X3)) ->
+              reduce_expression(bin_operation(X3, plus, literal_num(X1+X2)), Env, Result)
+      ;  NewBinaryOperation = 
+            bin_operation(
+                  bin_operation(literal_num(X1), plus, bin_operation(literal_num(X2), times, imaginary)),
+                  plus,
+                  bin_operation(literal_num(X4), plus, bin_operation(literal_num(X5), times, imaginary))) ->
+              reduce_expression(bin_operation(literal_num(X1+X4), 
+                                plus, 
+                                bin_operation(literal_num(X5+X2), times, imaginary)), Env, Result)
+      ;
+         Result = bin_operation(LeftReduced, Operator, RightReduced) ).
+
 %% :- type operator ---> times ; plus ; minus ; division.
 
 %% :- type expression ---> 
@@ -195,11 +250,15 @@ apply_operator(plus , X, Y, Result) :- Result = X + Y.
 apply_operator(minus, X, Y, Result) :- Result = X - Y.
 apply_operator(division, X, Y, Result) :- Result = X / Y.
 
+
 :- pred evaluate(expression::in, 
                  map(string, float)::in, 
                  maybe_error(float)::out) is det.
 
 evaluate(literal_num(Number), _, ok(Number)).
+
+evaluate(imaginary, _, error("imaginary")).
+
 
 evaluate(var(Variable), Vars, Result) :-
    (if map.search(Vars, Variable, Value) then
@@ -209,6 +268,51 @@ evaluate(var(Variable), Vars, Result) :-
     ).
 
 evaluate(bin_operation(Expr1,Operator,Expr2), Vars, Result) :-
+     evaluate(Expr1, Vars, LeftResult),
+     evaluate(Expr2, Vars, RightResult),
+     (if LeftResult = ok(LeftValue) then
+         (if RightResult = ok(RightValue) then
+            apply_operator(Operator, LeftValue,RightValue, OperationResult),
+            Result = ok(OperationResult)
+          else
+            Result = RightResult)
+      else
+         Result = LeftResult
+      ).
+
+
+
+
+type mcomplex ---> mcomplex(float, float).
+
+:- pred apply_operator(operator::in, mcomplex::in, mcomplex::in, mcomplex::out).
+
+
+%a+bi * 1/(x + yi)
+%ab - by + (ay + xb)i 
+apply_operator(times, mcomplex(X1,X2), mcomplex(Y1,Y2), Result) :- Result = mcomplex(X1*Y1 - Y2*X2, X1*Y2 + X2*Y1).
+apply_operator(plus , mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = mcomplex(X1 + Y1, X2 + Y2).
+apply_operator(minus, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = mcomplex(X1 - Y1, X2 - Y2).
+apply_operator(division, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = X / Y.
+
+
+:- pred evaluate_complex(expression::in, 
+                 map(string, mcomplex)::in, 
+                 maybe_error(mcomplex)::out) is det.
+
+evaluate_complex(literal_num(Number), _, ok(mcomplex(Number,0.0))).
+
+evaluate_complex(imaginary, _, ok(mcomplex(0.0, 1.0))).
+
+
+evaluate_complex(var(Variable), Vars, Result) :-
+   (if map.search(Vars, Variable, Value) then
+      Result = ok(Value)
+    else
+      Result = error(append("Variable not found: ",Variable))
+    ).
+
+evaluate_complex(bin_operation(Expr1,Operator,Expr2), Vars, Result) :-
      evaluate(Expr1, Vars, LeftResult),
      evaluate(Expr2, Vars, RightResult),
      (if LeftResult = ok(LeftValue) then
@@ -239,7 +343,11 @@ main(!IO) :-
           io.write_string(Str2,!IO),
           io.nl(!IO),
           evaluate(Expr3,map.from_corresponding_lists(["x"],[102.3]), Result),
-          io.write(Result,!IO)
+          io.write(Result,!IO),
+          io.nl(!IO),
+          reduce_expression(Expr2,map.from_corresponding_lists(["x"],[bin_operation(literal_num(102.3),plus,imaginary)]), ResultReduced),
+          io.write(ResultReduced,!IO)
+
         else
           io.write_string("Recog error",!IO))
       else
