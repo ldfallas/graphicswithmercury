@@ -283,17 +283,19 @@ evaluate(bin_operation(Expr1,Operator,Expr2), Vars, Result) :-
 
 
 
-type mcomplex ---> mcomplex(float, float).
+:- type mcomplex ---> mcomplex(float, float).
 
-:- pred apply_operator(operator::in, mcomplex::in, mcomplex::in, mcomplex::out).
+:- pred apply_complex_operator(operator::in, mcomplex::in, mcomplex::in, mcomplex::out).
 
 
 %a+bi * 1/(x + yi)
 %ab - by + (ay + xb)i 
-apply_operator(times, mcomplex(X1,X2), mcomplex(Y1,Y2), Result) :- Result = mcomplex(X1*Y1 - Y2*X2, X1*Y2 + X2*Y1).
-apply_operator(plus , mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = mcomplex(X1 + Y1, X2 + Y2).
-apply_operator(minus, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = mcomplex(X1 - Y1, X2 - Y2).
-apply_operator(division, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = X / Y.
+apply_complex_operator(times, mcomplex(X1,X2), mcomplex(Y1,Y2), Result) :- Result = mcomplex(X1*Y1 - Y2*X2, X1*Y2 + X2*Y1).
+apply_complex_operator(plus , mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = mcomplex(X1 + Y1, X2 + Y2).
+apply_complex_operator(minus, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- Result = mcomplex(X1 - Y1, X2 - Y2).
+apply_complex_operator(division, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :- 
+   Result = mcomplex((X1*X2 + Y1*Y2) / (Y1*Y1 + Y2*Y2),
+                     (Y1*X1 - X1*Y2) / (Y1*Y1 + Y2*Y2)).
 
 
 :- pred evaluate_complex(expression::in, 
@@ -313,17 +315,12 @@ evaluate_complex(var(Variable), Vars, Result) :-
     ).
 
 evaluate_complex(bin_operation(Expr1,Operator,Expr2), Vars, Result) :-
-     evaluate(Expr1, Vars, LeftResult),
-     evaluate(Expr2, Vars, RightResult),
-     (if LeftResult = ok(LeftValue) then
-         (if RightResult = ok(RightValue) then
-            apply_operator(Operator, LeftValue,RightValue, OperationResult),
-            Result = ok(OperationResult)
-          else
-            Result = RightResult)
-      else
-         Result = LeftResult
-      ).
+     evaluate_complex(Expr1, Vars, LeftResult),
+     evaluate_complex(Expr2, Vars, RightResult), (if LeftResult =
+     ok(LeftValue) then (if RightResult = ok(RightValue) then
+     apply_complex_operator(Operator, LeftValue,RightValue,
+     OperationResult), Result = ok(OperationResult) else Result =
+     RightResult) else Result = LeftResult ).
 
 
 
@@ -345,6 +342,12 @@ main(!IO) :-
           evaluate(Expr3,map.from_corresponding_lists(["x"],[102.3]), Result),
           io.write(Result,!IO),
           io.nl(!IO),
+
+          evaluate_complex(Expr3,map.from_corresponding_lists(["x"],[mcomplex(1.2,102.3)]), ResultC),
+          io.write(ResultC,!IO),
+          io.nl(!IO),
+
+
           reduce_expression(Expr2,map.from_corresponding_lists(["x"],[bin_operation(literal_num(102.3),plus,imaginary)]), ResultReduced),
           io.write(ResultReduced,!IO)
 
