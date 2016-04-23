@@ -298,6 +298,9 @@ apply_complex_operator(division, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :-
                      (Y1*X1 - X1*Y2) / (Y1*Y1 + Y2*Y2)).
 
 
+%%
+%% complex expression evaluation
+%%
 :- pred evaluate_complex(expression::in, 
                  map(string, mcomplex)::in, 
                  maybe_error(mcomplex)::out) is det.
@@ -323,9 +326,34 @@ evaluate_complex(bin_operation(Expr1,Operator,Expr2), Vars, Result) :-
      RightResult) else Result = LeftResult ).
 
 
+:- pred interpolate_funcs(float::in, float::in, 
+                       int::in, int::in,
+		      ((func float) = int )::out,
+		      ((func int) = float )::out) is det.
+
+interpolate_funcs(FromF, ToF, FromI, ToI,
+              FloatToIntFunc,
+              IntToFloatFunc) :-
+    M1 = (float(ToI) - float(FromI))/(ToF  - FromF),
+    B1 = float(FromI)  - M1*FromF,
+    M2 = (ToF - FromF)/(float(ToI) - float(FromI)),
+    B2 = FromF - M2*float(FromI),
+    FloatToIntFunc = (func(X::in) = (Y::out) is det :- Y =  truncate_to_int(M1*X + B1)),
+    IntToFloatFunc = (func(X::in) = (Y::out) is det :- Y =  (M2*float(X) + B2)).
 
 
 main(!IO) :-
+   interpolate_funcs(-1.0, 1.0, 0, 5, F2I, _),
+   io.write(F2I(1.0), !IO),
+   io.write(",",!IO),
+   io.nl(!IO),
+   io.write(F2I(0.0), !IO),
+   io.write(",",!IO),
+   io.nl(!IO),
+   io.write(F2I(-1.0), !IO),
+   io.write(",",!IO),
+   io.nl(!IO),
+
    Expr1 = bin_operation(var("x"), times, bin_operation(literal_num(4.0),times,literal_num(2.0))),
    simplify2(Expr1,Expr),
    expr_to_string(Expr, S),
