@@ -3,7 +3,29 @@
 :- interface.
 
 :- import_module io.
-:- pred main(io::di, io::uo) is cc_multi.
+:- import_module array.
+
+:- pred kmain(io::di, io::uo) is cc_multi.
+
+:- pred init_rectangular_array( 
+	    {int, int}::in, 
+	    {float, float}::in,
+	    {float, float}::in,
+	    (func(float,float) = int)::in,
+	    array(int)::out) is det.
+
+
+:- pred interpolate_funcs(float::in, float::in, 
+                       int::in, int::in,
+		      ((func float) = int )::out,
+		      ((func int) = float )::out) is det.
+
+:- pred index_array_to_bitmap_array(
+            array(int)::in, 
+            array({ int, int, int })::in,
+            array(int)::out) is det.
+
+
 
 :- implementation.
 :- import_module term.
@@ -13,6 +35,8 @@
 :- import_module maybe.
 :- import_module list.
 :- import_module map.
+:- import_module array.
+:- import_module int.
 
 :- pred const_to_s(const::in, string::out) is det.
 :- pred term_to_s(term::in,string::out) is det.
@@ -326,11 +350,6 @@ evaluate_complex(bin_operation(Expr1,Operator,Expr2), Vars, Result) :-
      RightResult) else Result = LeftResult ).
 
 
-:- pred interpolate_funcs(float::in, float::in, 
-                       int::in, int::in,
-		      ((func float) = int )::out,
-		      ((func int) = float )::out) is det.
-
 interpolate_funcs(FromF, ToF, FromI, ToI,
               FloatToIntFunc,
               IntToFloatFunc) :-
@@ -342,7 +361,37 @@ interpolate_funcs(FromF, ToF, FromI, ToI,
     IntToFloatFunc = (func(X::in) = (Y::out) is det :- Y =  (M2*float(X) + B2)).
 
 
-main(!IO) :-
+init_rectangular_array( {PixWidth, PixHeight},
+                        {X1,Y1}, 
+                        {X2,Y2},
+			InitPixFunc,
+			ResultArray) :-
+    interpolate_funcs(X1, X2, 0, PixWidth, _, WI2F),
+    interpolate_funcs(Y1, Y2, 0, PixHeight, _, HI2F),
+    ResultArray = array.generate(PixWidth * PixHeight,
+		   func(Index::in) = (ResultIndex::out) is det :- 
+                         ResultIndex = InitPixFunc(
+                             WI2F(Index mod PixWidth), 
+                             HI2F(Index / PixWidth ))).
+
+
+index_array_to_bitmap_array(IndexArray, Palette, BitmapArray) :-
+    array.size(IndexArray, Size),
+    BitmapArray = 
+       array.generate(Size * 3, 
+		     (func(Index) = Result :- 
+                         Entry = array.elem(Index / 3, IndexArray),
+			 {R, G, B} = array.elem(Entry, Palette),
+		         Channel = Index mod 3,
+			 (if Channel = 0 then
+                             Result = R
+                          else (if Channel = 1 then
+                                   Result = G
+                                else
+                                   Result = B)))).
+
+
+kmain(!IO) :-
    interpolate_funcs(-1.0, 1.0, 0, 5, F2I, _),
    io.write(F2I(1.0), !IO),
    io.write(",",!IO),

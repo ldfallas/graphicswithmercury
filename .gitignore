@@ -6,3 +6,5 @@
 *.d
 *#
 *.c_date
+*.err
+*.bmp
