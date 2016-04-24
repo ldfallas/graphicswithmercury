@@ -15,6 +15,19 @@
 :- import_module float.
 :- import_module list.
 
+:- func mandel_proc(float::in, float::in,float::in, float::in, int::in) = (int::out) is det.
+
+mandel_proc(X,Y,X0,Y0,C) = R  :- 
+   (if (X*X + Y*Y < 4.0, C < 255) then
+       R = mandel_proc(X*X - Y*Y + X0, 2.0*X*Y + Y0, X0,Y0, C + 1)
+    else
+       R = C).
+
+:- func mandel(float::in, float::in ) = (int::out) is det.
+
+mandel(X,Y) = R  :- 
+   R = mandel_proc(0.0,0.0, X, Y,0).
+
 main(!IO) :-
    io.write_string("Creating matrix data...",!IO),
    io.nl(!IO),
@@ -24,11 +37,12 @@ main(!IO) :-
 	    {Width, Height}, 
 	    {-1.0, 1.0},
 	    {1.0, -1.0},
-	    (func(X, Y) = R :- 
-                 (if X*X + Y*Y < 0.5 then 
-                     R = 1 
-                  else 
-                     R = 0)),
+            mandel,
+	    %% (func(X, Y) = R :- 
+            %%      (if X*X + Y*Y < 0.5 then 
+            %%          R = 1 
+            %%       else 
+            %%          R = 0)),
 	    IndexArray),
 
 
@@ -36,7 +50,8 @@ main(!IO) :-
 
    index_array_to_bitmap_array(
             IndexArray, 
-            array([{0 ,0, 0}, {255,0,0}]),
+            array.generate(256, (func(Index) = R :- R = {Index,255 - Index,0})),
+            %array([{0 ,0, 0}, {255,0,0}]),
             BitMapArray),
 
    io.write_string("Creating file.bmp ...", !IO),
