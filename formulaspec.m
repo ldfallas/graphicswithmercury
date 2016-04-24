@@ -4,6 +4,27 @@
 
 :- import_module io.
 :- import_module array.
+:- import_module map.
+:- import_module maybe.
+:- import_module term.
+
+:- pred term_to_expression(term::in, maybe_error(expression)::out) is det.
+
+:- type operator ---> times ; plus ; minus ; division.
+
+:- type expression ---> 
+     literal_num(float)
+     ; var(string)
+     ; imaginary
+     ; bin_operation(expression, operator, expression).
+
+
+:- type mcomplex ---> mcomplex(float, float).
+
+:- pred evaluate_complex(expression::in, 
+                 map(string, mcomplex)::in, 
+                 maybe_error(mcomplex)::out) is det.
+
 
 :- pred kmain(io::di, io::uo) is cc_multi.
 
@@ -28,13 +49,10 @@
 
 
 :- implementation.
-:- import_module term.
 :- import_module term_io.
 :- import_module string.
 :- import_module float.
-:- import_module maybe.
 :- import_module list.
-:- import_module map.
 :- import_module array.
 :- import_module int.
 
@@ -61,16 +79,9 @@ const_to_s(implementation_defined(_), Str) :-
    string.append("OTHER_","",Str).
    
 
-:- type operator ---> times ; plus ; minus ; division.
-
-:- type expression ---> 
-     literal_num(float)
-     ; var(string)
-     ; imaginary
-     ; bin_operation(expression, operator, expression).
 
 
-:- pred term_to_expression(term::in, maybe_error(expression)::out) is det.
+
 %:- pred term_to_expression(term::in, maybe_error(expression)::out) is cc_multi.
 
 %% term_to_expression(functor(atom("+"),[Op1,Op2],_), Expr) :-
@@ -307,7 +318,6 @@ evaluate(bin_operation(Expr1,Operator,Expr2), Vars, Result) :-
 
 
 
-:- type mcomplex ---> mcomplex(float, float).
 
 :- pred apply_complex_operator(operator::in, mcomplex::in, mcomplex::in, mcomplex::out).
 
@@ -325,9 +335,6 @@ apply_complex_operator(division, mcomplex(X1,X2), mcomplex(Y1,Y2) , Result) :-
 %%
 %% complex expression evaluation
 %%
-:- pred evaluate_complex(expression::in, 
-                 map(string, mcomplex)::in, 
-                 maybe_error(mcomplex)::out) is det.
 
 evaluate_complex(literal_num(Number), _, ok(mcomplex(Number,0.0))).
 
