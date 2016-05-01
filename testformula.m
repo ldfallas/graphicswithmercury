@@ -36,19 +36,19 @@ mandel(X,Y) = R  :-
 :- func custom_func_from_expr(expression::in,float::in, float::in) = (int::out) is det.
 
 custom_func_from_expr(Expr, X,Y ) = C :-
-    C = custom_func_proc(Expr, 0.0, 0.0, X, Y,0).
+    C = custom_func_proc(Expr, 0.0, 0.0, mcomplex(X, Y),0).
 
-:- func custom_func_proc(expression::in, float::in, float::in,float::in, float::in, int::in) = (int::out) is det.
+:- func custom_func_proc(expression::in, float::in, float::in, mcomplex::in, int::in) = (int::out) is det.
 
-custom_func_proc(Expr,X,Y,X0,Y0,C) = R  :- 
+custom_func_proc(Expr,X,Y,XY0,C) = R  :- 
    (if (X*X + Y*Y < 4.0, C < 255) then
        (if evaluate_complex(
              Expr,
              map.from_corresponding_lists(
                   ["z","c"],
-                  [mcomplex(X,Y), mcomplex(X0, Y0)]),
+                  [mcomplex(X,Y), XY0]),
              ok(mcomplex(NX,NY))) then
-           R = custom_func_proc(Expr, NX, NY,X0,Y0, C + 1)
+           R = custom_func_proc(Expr, NX, NY,XY0, C + 1)
         else 
            R = 255)
     else
@@ -58,8 +58,8 @@ custom_func_proc(Expr,X,Y,X0,Y0,C) = R  :-
 main(!IO) :-
    io.write_string("Creating matrix data...",!IO),
    io.nl(!IO),
-   Width = 1320,
-   Height = 1200,
+   Width = 320,
+   Height = 200,
    parser.read_term_from_string("f.m","z*z*z + c.",_,ReadTermResult),
    (if ReadTermResult = term(_, Term),
       term_to_expression(Term, ok(Expr)) then
