@@ -8,7 +8,7 @@
 :- import_module maybe.
 :- import_module term.
 
-:- pred term_to_expression(term::in, maybe_error(expression)::out) is det.
+:- pred term_to_expression(term(string)::in, maybe_error(expression)::out) is det.
 
 :- type operator ---> times ; plus ; minus ; division.
 
@@ -57,7 +57,7 @@
 :- import_module int.
 
 :- pred const_to_s(const::in, string::out) is det.
-:- pred term_to_s(term::in,string::out) is det.
+:- pred term_to_s(term(string)::in,string::out) is det.
 
 term_to_s(functor(C,L,_), Str) :-
    const_to_s(C,OStr),

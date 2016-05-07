@@ -1,0 +1,6 @@
+fractal_config(
+   image_resolution(1320,1200),
+   top_left(-1.0,0.5),
+   bottom_right(0.25,-1.0),	
+   formula(z*z + c+z+c)
+).
