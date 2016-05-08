@@ -114,7 +114,7 @@ term_to_fractal_config_resolution(Terms, Result) :-
                                         { LeftX, TopY },
                                         { RightX, BottomY },
                                         Expr,
-                                        array.generate(256, (func(Index) = R :- R = {Index,255 - Index,255-Index}))))
+                                        array.generate(256, (func(Index) = R :- R = {255-Index,255 - Index,255-Index}))))
                     else
                       Result = error("Error reading formula"))
                  else
@@ -157,8 +157,8 @@ main(!IO) :-
             io.write_string("Creating matrix data...",!IO),
             init_rectangular_array( 
                 {Width, Height}, 
-                {LeftX, TopY},
-                {RightX, BottomY},
+                {LeftX, BottomY}, %% workaround for BMP layout
+                {RightX, TopY},
                 custom_func_from_expr(Expr),
                 IndexArray),
             io.write_string("Creating bitmap data...",!IO),
