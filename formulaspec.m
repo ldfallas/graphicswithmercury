@@ -41,6 +41,12 @@
 		      ((func float) = int )::out,
 		      ((func int) = float )::out) is det.
 
+:- pred int_interpolate_funcs(int::in, int::in, 
+                       int::in, int::in,
+		      ((func int) = int )::out,
+		      ((func int) = int )::out) is det.
+
+
 :- pred index_array_to_bitmap_array(
             array(int)::in, 
             array({ int, int, int })::in,
@@ -366,6 +372,18 @@ interpolate_funcs(FromF, ToF, FromI, ToI,
     B2 = FromF - M2*float(FromI),
     FloatToIntFunc = (func(X::in) = (Y::out) is det :- Y =  truncate_to_int(M1*X + B1)),
     IntToFloatFunc = (func(X::in) = (Y::out) is det :- Y =  (M2*float(X) + B2)).
+
+int_interpolate_funcs(FromF, ToF, FromI, ToI,
+              FromToFunc,
+              ToFromFunc) :-
+    M1 = (float(ToI) - float(FromI))/(float(ToF)  - float(FromF)),
+    B1 = float(FromI)  - M1*float(FromF),
+    M2 = float(ToF - FromF)/(float(ToI) - float(FromI)),
+    B2 = float(FromF) - M2*float(FromI),
+    FromToFunc = (func(X::in) = (Y::out) is det :- Y =  truncate_to_int(M1*float(X) + B1)),
+    ToFromFunc = (func(X::in) = (Y::out) is det :- Y =  truncate_to_int(M2*float(X) + B2)).
+
+
 
 
 init_rectangular_array( {PixWidth, PixHeight},

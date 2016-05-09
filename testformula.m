@@ -90,6 +90,68 @@ term_to_fractal_configuration(Term, Result) :-
         Result = error(Message)
     ).
 
+:- pred term_to_palette_config(
+	    term(string)::in, 
+	    maybe_error(array({ int, int, int }))::out) is det.
+
+term_to_palette_config(Term, Result) :-
+   (if Term = functor(atom("palette"),Parts,_) then
+       terms_to_palette(Parts, [], Result)
+    else
+       Result = error("error expecting palette")).
+
+:- pred gen_colors_for_range(int::in, 
+                             int::in, 
+			     ((func int) = int )::in,
+			     ((func int) = int )::in,
+			     ((func int) = int )::in,
+			     list({int,int,int})::in,
+			     list({int,int,int})::out) is det.
+gen_colors_for_range(Index, Count, R2RFunc, G2GFunc, B2BFunc, Current, Result) :-
+  (if Index > Count then
+      Result = Current
+      else
+        NewCurrent = [{R2RFunc(Index), G2GFunc(Index), B2BFunc(Index)}|Current],
+        gen_colors_for_range(Index + 1, Count, R2RFunc, G2GFunc, B2BFunc, NewCurrent, Result)).
+
+:- pred terms_to_palette(
+	    list(term(string))::in, 
+            list({int, int, int})::in,
+	    maybe_error(array({int,int,int}))::out) is det.
+
+terms_to_palette([],TmpResult, ok(ResultArray)) :-
+   list.reverse(TmpResult, ReversedList),
+   array.from_list(ReversedList, ResultArray).
+
+terms_to_palette([Term|Rest],TmpResult,Result) :-
+   (if Term = functor(atom("single"),
+                     [functor(integer(R),_,_),
+                      functor(integer(G),_,_),
+		      functor(integer(B),_,_)],
+                     _) then
+       terms_to_palette(Rest, [{R,G,B}|TmpResult], Result)
+     else
+      (if Term = functor(atom("range"),[
+                            functor(atom("from"),
+                                    [functor(integer(R1),_,_),
+                                     functor(integer(G1),_,_),
+	            	             functor(integer(B1),_,_)],_),
+                            functor(atom("to"),
+                                    [functor(integer(R2),_,_),
+                                     functor(integer(G2),_,_),
+	            	             functor(integer(B2),_,_)],_),
+                            functor(integer(Count),_,_)
+                         ],_) then
+           int_interpolate_funcs(R1, R2,1, Count, _, R2RFunc),
+           int_interpolate_funcs(G1, G2,1, Count, _, G2GFunc),
+           int_interpolate_funcs(B1, B2,1, Count, _, B2BFunc),
+           gen_colors_for_range(1, Count, R2RFunc, G2GFunc, B2BFunc,[], RangeList),
+           list.append(TmpResult, RangeList,  NewTmpResult),
+           terms_to_palette(Rest, NewTmpResult, Result)
+       else
+           Result = error("Problem reading palette configuration"))
+).
+
 
 
 :- pred term_to_fractal_config_resolution(
@@ -109,12 +171,19 @@ term_to_fractal_config_resolution(Terms, Result) :-
 		       functor(float(BottomY),_,_) ],
 		     _)|Rest3] then
                     
-                    (if Rest3 = [functor(atom("formula"),[Term],_)],term_to_expression(Term, ok(Expr)) then
-                      Result  = ok(config( { Width, Height },
-                                        { LeftX, TopY },
-                                        { RightX, BottomY },
-                                        Expr,
-                                        array.generate(256, (func(Index) = R :- R = {255-Index,255 - Index,255-Index}))))
+                    (if Rest3 = [functor(atom("formula"),[Term],_)|Rest4],term_to_expression(Term, ok(Expr)) then
+                        (if Rest4 = [PaletteConfig], term_to_palette_config(PaletteConfig, ok(Palette)) then 
+                              Result  = ok(config( { Width, Height },
+                                                   { LeftX, TopY },
+                                                   { RightX, BottomY },
+                                                   Expr,
+                                                   Palette
+                                                   %array.generate(256, (func(Index) = R :- R = {255-Index,255 - Index,255-Index}))
+ ))
+                          
+                           else
+                              Result = error("Error reading palette")
+                        )
                     else
                       Result = error("Error reading formula"))
                  else
@@ -153,6 +222,7 @@ main(!IO) :-
       (if (StreamResult = ok(Stream)) then
          io.set_input_stream(Stream,_, !IO),
          read_fractal_configuration_from_file(InputFileName, ConfigResult, !IO),
+         %io.write(ConfigResult, !IO),
          (if ConfigResult = ok(config({Width, Height}, {LeftX, TopY},{RightX, BottomY},Expr,Palette)) then
             io.write_string("Creating matrix data...",!IO),
             init_rectangular_array( 
