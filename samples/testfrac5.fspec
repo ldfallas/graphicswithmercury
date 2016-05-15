@@ -1,8 +1,8 @@
 fractal_config(
    image_resolution(320,200),
-   top_left(-0.25,0.9),
-   bottom_right(0.0,0.7),	
-   formula(z*z*z + c),
+   top_left(-2.0, 1.5),
+   bottom_right(1.0 , -1.5),	
+   formula(z*z + z + c),
    palette(
       single(10,20,30),
       range(from(10,30,40),to(30,50,76),127),
