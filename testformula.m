@@ -151,9 +151,9 @@ terms_to_palette([Term|Rest],TmpResult,Result) :-
                                      functor(integer(B2),_,_)],_),
                             functor(integer(Count),_,_)
                          ],_) then
-           int_interpolate_funcs(R1, R2,1, Count, _, R2RFunc),
-           int_interpolate_funcs(G1, G2,1, Count, _, G2GFunc),
-           int_interpolate_funcs(B1, B2,1, Count, _, B2BFunc),
+           int_interpolate_funcs(R1, R2, 1, Count, _, R2RFunc),
+           int_interpolate_funcs(G1, G2, 1, Count, _, G2GFunc),
+           int_interpolate_funcs(B1, B2, 1, Count, _, B2BFunc),
            gen_colors_for_range(1, Count, R2RFunc, G2GFunc, B2BFunc,[], RangeList),
            list.append(TmpResult, RangeList,  NewTmpResult),
            terms_to_palette(Rest, NewTmpResult, Result)
@@ -166,6 +166,7 @@ terms_to_palette([Term|Rest],TmpResult,Result) :-
 :- pred term_to_fractal_config_resolution(
             list(term(string))::in, 
             maybe_error(fractal_configuration)::out).
+
 term_to_fractal_config_resolution(Terms, Result) :-
    (if Terms = [functor(atom("image_resolution"),
                      [ functor(integer(Width), _, _),
