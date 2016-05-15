@@ -62,7 +62,7 @@ write_pixel_data(Stream,
 
 write_bmp(Name, Width, Height,ImgData, !IO) :- 
     RowWidth = floor_to_int((float(Width)*24.0 + 31.0)/32.0)*4,
-    io.write_int(RowWidth,!IO),
+    %io.write_int(RowWidth,!IO),
     io.open_binary_output(Name,StreamRes,!IO),
     (if StreamRes = ok(Stream) then
        io.write_byte(Stream,char.to_int('B'),!IO),
@@ -104,7 +104,7 @@ write_bmp(Name, Width, Height,ImgData, !IO) :-
        %WritePixel = (pred(I::in,!.IO::di,!:IO::uo) :-
        %   1 = 1.
        %),
-       io.write_int(RowWidth,!IO),
+       %io.write_int(RowWidth,!IO),
        int.fold_up(write_pixel_data(Stream,
                  ImgData,
                  Width * 3,

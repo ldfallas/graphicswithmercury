@@ -1,3 +1,4 @@
+
 :- module testformula.
 
 :- interface.
@@ -225,6 +226,7 @@ main(!IO) :-
          %io.write(ConfigResult, !IO),
          (if ConfigResult = ok(config({Width, Height}, {LeftX, TopY},{RightX, BottomY},Expr,Palette)) then
             io.write_string("Creating matrix data...",!IO),
+            io.nl(!IO),
             init_rectangular_array( 
                 {Width, Height}, 
                 {LeftX, BottomY}, %% workaround for BMP layout
@@ -232,11 +234,13 @@ main(!IO) :-
                 custom_func_from_expr(Expr),
                 IndexArray),
             io.write_string("Creating bitmap data...",!IO),
+            io.nl(!IO),
             index_array_to_bitmap_array(
                 IndexArray, 
                 Palette,
                 BitMapArray),
             io.write_string("Creating file.bmp ...", !IO),
+            io.nl(!IO),
             bmp.write_bmp("file.bmp", Width, Height, BitMapArray,!IO ),
             io.write("Done!", !IO)
 
