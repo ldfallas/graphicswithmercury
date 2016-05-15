@@ -29,22 +29,22 @@
 :- pred kmain(io::di, io::uo) is cc_multi.
 
 :- pred init_rectangular_array( 
-	    {int, int}::in, 
-	    {float, float}::in,
-	    {float, float}::in,
-	    (func(float,float) = int)::in,
-	    array(int)::out) is det.
+            {int, int}::in, 
+            {float, float}::in,
+            {float, float}::in,
+            (func(float,float) = int)::in,
+            array(int)::out) is det.
 
 
 :- pred interpolate_funcs(float::in, float::in, 
                        int::in, int::in,
-		      ((func float) = int )::out,
-		      ((func int) = float )::out) is det.
+                      ((func float) = int )::out,
+                      ((func int) = float )::out) is det.
 
 :- pred int_interpolate_funcs(int::in, int::in, 
                        int::in, int::in,
-		      ((func int) = int )::out,
-		      ((func int) = int )::out) is det.
+                      ((func int) = int )::out,
+                      ((func int) = int )::out) is det.
 
 
 :- pred index_array_to_bitmap_array(
@@ -65,10 +65,10 @@
 :- pred const_to_s(const::in, string::out) is det.
 :- pred term_to_s(term(string)::in,string::out) is det.
 
-term_to_s(functor(C,L,_), Str) :-
+term_to_s(functor(C,_ , _), Str) :-
    const_to_s(C,OStr),
    string.append("FUNCTORTERM",OStr,Str).
-term_to_s(variable(_,_), Str) :-
+term_to_s(variable(_, _), Str) :-
    string.append("VARIABLE","STR",Str).
 
 const_to_s(atom(AtomVal), Str) :-
@@ -164,35 +164,35 @@ simplify2(Result, Result).
 :- pred simplifying2(expression::in, expression::out) is cc_multi.
 
 simplifying2(bin_operation(var(X), times, literal_num(Y)), 
-	     bin_operation( literal_num(Y), times,var(X))).
+             bin_operation( literal_num(Y), times,var(X))).
 
-simplifying2(bin_operation(var(X), times, literal_num(0.0)), 
-	     literal_num(0.0)).
+simplifying2(bin_operation(var(_), times, literal_num(0.0)), 
+             literal_num(0.0)).
 
 simplifying2(bin_operation(literal_num(X), times, literal_num(Y)), 
-	     literal_num(X*Y)).
+             literal_num(X*Y)).
 
 simplifying2(bin_operation(literal_num(X), plus, literal_num(Y)), 
-	     literal_num(X+Y)).
+             literal_num(X+Y)).
 
 simplifying2(bin_operation(bin_operation(X, plus, literal_num(Y)), plus, literal_num(Z)), 
              Result) :-
    simplifying2(bin_operation(X, plus, literal_num(Y+Z)),
-	       Result).
+               Result).
 
 simplifying2(bin_operation(X, times, bin_operation(Y, plus, Z)), 
              Result) :-
    simplifying2(bin_operation(X, times,Y), Left),
    simplifying2(bin_operation(X, times,Z), Right),
    simplifying2(bin_operation(Left,plus, Right),
-	       Result).
+               Result).
 
 simplifying2(bin_operation(bin_operation(X, plus, Y), times, Z), 
              Result) :-
    simplifying2(bin_operation(X, times,Z), Left),
    simplifying2(bin_operation(Y, times,Z), Right),
    simplifying2(bin_operation(Left,plus, Right),
-	       Result).
+               Result).
 
 
 simplifying2(X,X).
@@ -234,7 +234,7 @@ reduce_expression(var(VarName), Env, Result) :-
     else
        Result = var("ERROR")).
 
-reduce_expression(literal_num(X), Env, literal_num(X)).
+reduce_expression(literal_num(X), _, literal_num(X)).
 
 reduce_expression(imaginary, _, imaginary).
 
@@ -277,12 +277,6 @@ reduce_expression(bin_operation(Left, Operator, Right), Env, Result) :-
       ;
          Result = bin_operation(LeftReduced, Operator, RightReduced) ).
 
-%% :- type operator ---> times ; plus ; minus ; division.
-
-%% :- type expression ---> 
-%%      literal_num(float)
-%%      ; var(string)
-%%      ; bin_operation(expression, operator, expression).
 
 :- pred apply_operator(operator::in, float::in, float::in, float::out).
 
@@ -389,12 +383,12 @@ int_interpolate_funcs(FromF, ToF, FromI, ToI,
 init_rectangular_array( {PixWidth, PixHeight},
                         {X1,Y1}, 
                         {X2,Y2},
-			InitPixFunc,
-			ResultArray) :-
+                        InitPixFunc,
+                        ResultArray) :-
     interpolate_funcs(X1, X2, 0, PixWidth, _, WI2F),
     interpolate_funcs(Y1, Y2, 0, PixHeight, _, HI2F),
     ResultArray = array.generate(PixWidth * PixHeight,
-		   func(Index::in) = (ResultIndex::out) is det :- 
+                   func(Index::in) = (ResultIndex::out) is det :- 
                          ResultIndex = InitPixFunc(
                              WI2F(Index mod PixWidth), 
                              HI2F(Index / PixWidth ))).
@@ -404,11 +398,11 @@ index_array_to_bitmap_array(IndexArray, Palette, BitmapArray) :-
     array.size(IndexArray, Size),
     BitmapArray = 
        array.generate(Size * 3, 
-		     (func(Index) = Result :- 
+                     (func(Index) = Result :- 
                          Entry = array.elem(Index / 3, IndexArray),
-			 {R, G, B} = array.elem(Entry, Palette),
-		         Channel = Index mod 3,
-			 (if Channel = 0 then
+                         {R, G, B} = array.elem(Entry, Palette),
+                         Channel = Index mod 3,
+                         (if Channel = 0 then
                              Result = R
                           else (if Channel = 1 then
                                    Result = G
@@ -434,7 +428,7 @@ kmain(!IO) :-
    io.write_string(S,!IO),
    io.nl(!IO),
    term_io.read_term(T, !IO),
-   (if T = term(V1,Trm1) then
+   (if T = term(_, Trm1) then
       term_to_expression(Trm1, Exprs1),
       ( if (Exprs1 = ok(Expr2)) then 
           simplify2(Expr2,Expr3),

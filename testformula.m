@@ -68,17 +68,17 @@ custom_func_proc(Expr, MaxEscapeTime, X, Y, Env0, C) = R  :-
 
 
 :- type fractal_configuration --->
-    config( { int, int },             % image resolution
-            { float, float },         % top left cartesian coordinates
-            { float, float },         % bottom right cartesian coordinates
-            expression,                     % formula
+    config( { int, int },              % image resolution
+            { float, float },          % top left cartesian coordinates
+            { float, float },          % bottom right cartesian coordinates
+            expression,                % formula
             array({ int, int, int })). % palette
 
 
 :- pred error_message_with_location(
-	    string::in,
-	    term(string)::in,
-	    string::out) is det.
+            string::in,
+            term(string)::in,
+            string::out) is det.
 
 error_message_with_location(Msg, functor(_,_, context(_,Line)), ResultMsg) :-
      string.append(", at line:",string.int_to_string(Line),TmpString),
@@ -88,8 +88,8 @@ error_message_with_location(Msg, variable(_, context(_,Line)), ResultMsg) :-
      string.append(Msg, TmpString, ResultMsg).
 
 :- pred term_to_fractal_configuration( 
-	    term(string)::in, 
-	    maybe_error(fractal_configuration)::out) is det.
+            term(string)::in, 
+            maybe_error(fractal_configuration)::out) is det.
 
 term_to_fractal_configuration(Term, Result) :-
     (if Term = functor(atom("fractal_config"),Args,_) then
@@ -100,8 +100,8 @@ term_to_fractal_configuration(Term, Result) :-
     ).
 
 :- pred term_to_palette_config(
-	    term(string)::in, 
-	    maybe_error(array({ int, int, int }))::out) is det.
+            term(string)::in, 
+            maybe_error(array({ int, int, int }))::out) is det.
 
 term_to_palette_config(Term, Result) :-
    (if Term = functor(atom("palette"),Parts,_) then
@@ -111,11 +111,11 @@ term_to_palette_config(Term, Result) :-
 
 :- pred gen_colors_for_range(int::in, 
                              int::in, 
-			     ((func int) = int )::in,
-			     ((func int) = int )::in,
-			     ((func int) = int )::in,
-			     list({int,int,int})::in,
-			     list({int,int,int})::out) is det.
+                             ((func int) = int )::in,
+                             ((func int) = int )::in,
+                             ((func int) = int )::in,
+                             list({int,int,int})::in,
+                             list({int,int,int})::out) is det.
 gen_colors_for_range(Index, Count, R2RFunc, G2GFunc, B2BFunc, Current, Result) :-
   (if Index > Count then
       Result = Current
@@ -124,9 +124,9 @@ gen_colors_for_range(Index, Count, R2RFunc, G2GFunc, B2BFunc, Current, Result) :
         gen_colors_for_range(Index + 1, Count, R2RFunc, G2GFunc, B2BFunc, NewCurrent, Result)).
 
 :- pred terms_to_palette(
-	    list(term(string))::in, 
+            list(term(string))::in, 
             list({int, int, int})::in,
-	    maybe_error(array({int,int,int}))::out) is det.
+            maybe_error(array({int,int,int}))::out) is det.
 
 terms_to_palette([],TmpResult, ok(ResultArray)) :-
    list.reverse(TmpResult, ReversedList),
@@ -136,7 +136,7 @@ terms_to_palette([Term|Rest],TmpResult,Result) :-
    (if Term = functor(atom("single"),
                      [functor(integer(R),_,_),
                       functor(integer(G),_,_),
-		      functor(integer(B),_,_)],
+                      functor(integer(B),_,_)],
                      _) then
        terms_to_palette(Rest, [{R,G,B}|TmpResult], Result)
      else
@@ -144,11 +144,11 @@ terms_to_palette([Term|Rest],TmpResult,Result) :-
                             functor(atom("from"),
                                     [functor(integer(R1),_,_),
                                      functor(integer(G1),_,_),
-	            	             functor(integer(B1),_,_)],_),
+                                     functor(integer(B1),_,_)],_),
                             functor(atom("to"),
                                     [functor(integer(R2),_,_),
                                      functor(integer(G2),_,_),
-	            	             functor(integer(B2),_,_)],_),
+                                     functor(integer(B2),_,_)],_),
                             functor(integer(Count),_,_)
                          ],_) then
            int_interpolate_funcs(R1, R2,1, Count, _, R2RFunc),
@@ -164,23 +164,23 @@ terms_to_palette([Term|Rest],TmpResult,Result) :-
 
 
 :- pred term_to_fractal_config_resolution(
-	    list(term(string))::in, 
-	    maybe_error(fractal_configuration)::out).
+            list(term(string))::in, 
+            maybe_error(fractal_configuration)::out).
 term_to_fractal_config_resolution(Terms, Result) :-
    (if Terms = [functor(atom("image_resolution"),
-                     [ functor(integer(Width),_, _),
-		       functor(integer(Height),_, _) ],
-		     _)|Rest1] then
+                     [ functor(integer(Width), _, _),
+                       functor(integer(Height), _, _) ],
+                     _)|Rest1] then
        (if  Rest1 = [functor(atom("top_left"),
-                     [ functor(float(LeftX),_,_),
-		       functor(float(TopY),_,_) ],
-		     _)|Rest2] then
-		(if  Rest2 = [functor(atom("bottom_right"),
-                     [ functor(float(RightX),_,_),
-		       functor(float(BottomY),_,_) ],
-		     _)|Rest3] then
+                     [ functor(float(LeftX), _, _),
+                       functor(float(TopY), _, _) ],
+                     _)|Rest2] then
+                (if  Rest2 = [functor(atom("bottom_right"),
+                     [ functor(float(RightX), _, _),
+                       functor(float(BottomY), _, _) ],
+                     _)|Rest3] then
                     
-                    (if Rest3 = [functor(atom("formula"),[Term],_)|Rest4],term_to_expression(Term, ok(Expr)) then
+                    (if Rest3 = [functor(atom("formula"), [Term], _)|Rest4], term_to_expression(Term, ok(Expr)) then
                         (if Rest4 = [PaletteConfig], term_to_palette_config(PaletteConfig, ok(Palette)) then 
                               Result  = ok(config( { Width, Height },
                                                    { LeftX, TopY },

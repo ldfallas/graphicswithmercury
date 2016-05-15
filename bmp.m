@@ -40,7 +40,7 @@ write_short(IntValue,Stream,!IO) :-
 
 :- pred write_pixel_data(
         io.binary_output_stream::in,
-	array(int)::in,
+        array(int)::in,
         int::in,  % width
         int::in,  % height
         int::in,  % padding
@@ -49,7 +49,7 @@ write_short(IntValue,Stream,!IO) :-
 write_pixel_data(Stream,
                  Data,
                  Width,
-                 Height,
+                 _,
                  Padding,
                  Index,
                  !IO) :-
