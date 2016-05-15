@@ -35,26 +35,34 @@ mandel_proc(X,Y,X0,Y0,C) = R  :-
 mandel(X,Y) = R  :- 
    R = mandel_proc(0.0,0.0, X, Y,0).
 
-:- func custom_func_from_expr(expression::in,float::in, float::in) = (int::out) is det.
+:- func custom_func_from_expr(expression::in,
+                              int::in,
+                              float::in, 
+                              float::in) = (int::out) is det.
 
-custom_func_from_expr(Expr, X,Y ) = C :-
+custom_func_from_expr(Expr, MaxEscapeTime, X, Y ) = C :-
     Env0 = map.from_corresponding_lists(
                   ["c"],
                   [mcomplex(X, Y)]),
-    C = custom_func_proc(Expr, 0.0, 0.0, Env0, 0).
+    C = custom_func_proc(Expr, MaxEscapeTime, 0.0, 0.0, Env0, 0).
 
-:- func custom_func_proc(expression::in, float::in, float::in, map(string, mcomplex)::in, int::in) = (int::out) is det.
+:- func custom_func_proc(expression::in, 
+                         int::in,
+                         float::in, 
+                         float::in,                          
+                         map(string, mcomplex)::in, 
+                         int::in) = (int::out) is det.
 
-custom_func_proc(Expr, X, Y, Env0, C) = R  :- 
+custom_func_proc(Expr, MaxEscapeTime, X, Y, Env0, C) = R  :- 
    Env1 = map.det_insert(Env0, "z", mcomplex(X, Y)),
-   (if (X*X + Y*Y < 4.0, C < 255) then
+   (if (X*X + Y*Y < 4.0, C < MaxEscapeTime) then
        (if evaluate_complex(
              Expr,
              Env1,
              ok(mcomplex(NX,NY))) then
-           R = custom_func_proc(Expr, NX, NY, Env0, C + 1)
+           R = custom_func_proc(Expr, MaxEscapeTime, NX, NY, Env0, C + 1)
         else 
-           R = 255)
+           R = MaxEscapeTime)
     else
        R = C).
 
@@ -179,7 +187,6 @@ term_to_fractal_config_resolution(Terms, Result) :-
                                                    { RightX, BottomY },
                                                    Expr,
                                                    Palette
-                                                   %array.generate(256, (func(Index) = R :- R = {255-Index,255 - Index,255-Index}))
  ))
                           
                            else
@@ -223,15 +230,14 @@ main(!IO) :-
       (if (StreamResult = ok(Stream)) then
          io.set_input_stream(Stream,_, !IO),
          read_fractal_configuration_from_file(InputFileName, ConfigResult, !IO),
-         %io.write(ConfigResult, !IO),
          (if ConfigResult = ok(config({Width, Height}, {LeftX, TopY},{RightX, BottomY},Expr,Palette)) then
             io.write_string("Creating matrix data...",!IO),
             io.nl(!IO),
             init_rectangular_array( 
-                {Width, Height}, 
-                {LeftX, BottomY}, %% workaround for BMP layout
-                {RightX, TopY},
-                custom_func_from_expr(Expr),
+                { Width, Height }, 
+                { LeftX, BottomY }, %% workaround for BMP layout
+                { RightX, TopY },
+                custom_func_from_expr(Expr, array.size(Palette) - 1 ),
                 IndexArray),
             io.write_string("Creating bitmap data...",!IO),
             io.nl(!IO),
@@ -252,41 +258,4 @@ main(!IO) :-
           io.write(StreamResult ,!IO))
     else io.write("Incorrect number of arguments, expecting fractal configuration file name.",!IO)),
 
-   %% io.write_string("Creating matrix data...",!IO),
-   %% io.nl(!IO),
-   %% Width = 320,
-   %% Height = 200,
-   %% parser.read_term_from_string("f.m","z*z - z + c.",_,ReadTermResult),
-   %% (if ReadTermResult = term(_, Term),
-   %%    term_to_expression(Term, ok(Expr)) then
-   %%    init_rectangular_array( 
-   %%          {Width, Height}, 
-   %%          {-1.0, 1.0},
-   %%          {1.0, -1.0},
-   %%          custom_func_from_expr(Expr),
-   %%          %%mandel,
-   %%          %% (func(X, Y) = R :- 
-   %%          %%      (if X*X + Y*Y < 0.5 then 
-   %%          %%          R = 1 
-   %%          %%       else 
-   %%          %%          R = 0)),
-   %%          IndexArray),
-
-   %%    io.write_string("Creating bitmap data...",!IO),
-
-   %%    index_array_to_bitmap_array(
-   %%          IndexArray, 
-   %%          array.generate(256, (func(Index) = R :- R = {Index,255 - Index,255-Index})),
-   %%          %array([{0 ,0, 0}, {255,0,0}]),
-   %%          BitMapArray),
-
-   %%    io.write_string("Creating file.bmp ...", !IO),
-
-
-   %%    bmp.write_bmp("file.bmp", Width, Height, BitMapArray,!IO ),
- 
-   %%    io.write("Done!", !IO)
-   %% else 
-   %%    io.write(ReadTermResult,!IO),
-   %%    io.write_string("Error reading term",!IO)),
    io.nl(!IO).
