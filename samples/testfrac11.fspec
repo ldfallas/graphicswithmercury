@@ -1,0 +1,12 @@
+fractal_config(
+   image_resolution(640,480),
+   top_left(    0.19, 0.17),
+   bottom_right( 0.21, 0.15),	
+   formula(z*i*z*z + z*z*i + c+z+c),
+   palette(
+      range(from(0,2,23), 
+            to(255,255,255),
+            175)
+
+   )
+).

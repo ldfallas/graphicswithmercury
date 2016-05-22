@@ -106,7 +106,10 @@ term_to_expression(functor(atom(AtomStr),Ops,_), Expr) :-
       Expr = ok(bin_operation(Op1Expr, Operator, Op2Expr))
     else
       (if Ops = [] then
-          Expr = ok(var(AtomStr))
+          (if AtomStr = "i" then
+             Expr = ok(imaginary)
+           else
+             Expr = ok(var(AtomStr)))
        else
           Expr = error("Error"))
    ).
@@ -119,8 +122,6 @@ term_to_expression(functor(string(_),_,_), error("Error")).
 term_to_expression(functor(implementation_defined(_),_,_), error("Error")).
 term_to_expression(variable(_,_), error("Error")).
 
-
-%term_to_expression(_, error("Error")).
 
 
 :- pred op_to_string(operator,string).
